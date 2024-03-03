@@ -48,17 +48,27 @@ impl<'a> Lexer<'a> {
         &self.contents[range]
     }
 
-    fn read_ident(&mut self) -> &'a [u8] {
+    fn read_while(&mut self, pred: fn(u8) -> bool) -> &'a [u8] {
         let start = self.pos;
         while !self.is_at_end() {
             let c = self.cur_char();
-            if !pred::is_valid_ident(c) {
+            if !pred(c) {
                 break;
             }
             self.advance();
         }
 
         self.slice(start..self.pos)
+    }
+
+    #[inline(always)]
+    fn read_ident(&mut self) -> &'a [u8] {
+        self.read_while(pred::is_valid_ident)
+    }
+
+    #[inline(always)]
+    fn read_int(&mut self) -> &'a [u8] {
+        self.read_while(|c| c.is_ascii_digit())
     }
 
     fn skip_whitespace(&mut self) {
@@ -87,7 +97,7 @@ impl<'a> Iterator for Lexer<'a> {
             return None;
         }
 
-        let token = Some(match self.cur_char() {
+        let token = match self.cur_char() {
             b'.' => Token::new(TokenType::Dot, self.slice_len(1)),
             b',' => Token::new(TokenType::Comma, self.slice_len(1)),
             b':' => Token::new(TokenType::Colon, self.slice_len(1)),
@@ -136,11 +146,15 @@ impl<'a> Iterator for Lexer<'a> {
                 let ident = self.read_ident();
                 Token::keyword(ident)
             }
+            c if c.is_ascii_digit() => {
+                let int = self.read_int();
+                Token::new(TokenType::IntLit, int)
+            }
             _ => Token::illegal(self.slice_len(1)),
-        });
+        };
 
         self.advance();
-        return token;
+        return Some(token);
     }
 }
 
@@ -191,7 +205,7 @@ mod tests {
         tok = lex.next();
         assert!(tok.is_none());
     }
-    
+
     #[test]
     fn comparison() {
         let code = "= ! != == > >= < <=";
@@ -258,6 +272,35 @@ mod tests {
 
         let tok = lex.next();
         assert!(tok.is_some_and(|t| t.ty == TokenType::Fn));
+        assert!(lex.next().is_none());
+    }
+
+    #[test]
+    fn literals() {
+        let code = "123 999 0717";
+        let mut lex = Lexer::from(code);
+
+        let tok = lex.next();
+        assert!(tok.is_some());
+
+        let tok = tok.unwrap();
+        assert_eq!(tok.ty, TokenType::IntLit);
+        assert_eq!(tok.lit, b"123");
+
+        let tok = lex.next();
+        assert!(tok.is_some());
+
+        let tok = tok.unwrap();
+        assert_eq!(tok.ty, TokenType::IntLit);
+        assert_eq!(tok.lit, b"999");
+        
+        let tok = lex.next();
+        assert!(tok.is_some());
+
+        let tok = tok.unwrap();
+        assert_eq!(tok.ty, TokenType::IntLit);
+        assert_eq!(tok.lit, b"0717");
+
         assert!(lex.next().is_none());
     }
 }

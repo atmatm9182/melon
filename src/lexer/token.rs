@@ -56,5 +56,7 @@ pub enum TokenType {
     Gte,
     Lte,
 
+    IntLit,
+
     Illegal,
 }
