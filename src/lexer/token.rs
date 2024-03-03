@@ -33,7 +33,7 @@ pub enum TokenType {
 
     Assign,
 
-    Not,
+    Bang,
     Eq,
     Neq,
     Gt,

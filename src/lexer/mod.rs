@@ -27,6 +27,11 @@ impl<'a> Lexer<'a> {
     }
 
     #[inline(always)]
+    fn peek_char(&self) -> Option<u8> {
+        self.contents.get(self.pos + 1).copied()
+    }
+
+    #[inline(always)]
     fn slice_len(&self, len: usize) -> &'a [u8] {
         self.slice(self.pos..self.pos + len)
     }
@@ -66,7 +71,7 @@ impl<'a> From<&'a str> for Lexer<'a> {
     fn from(value: &'a str) -> Self {
         Self {
             contents: value.as_bytes(),
-            pos: 0
+            pos: 0,
         }
     }
 }
@@ -90,7 +95,42 @@ impl<'a> Iterator for Lexer<'a> {
             b'-' => Token::new(TokenType::Minus, self.slice_len(1)),
             b'*' => Token::new(TokenType::Star, self.slice_len(1)),
             b'/' => Token::new(TokenType::Slash, self.slice_len(1)),
-            b'=' => Token::new(TokenType::Assign, self.slice_len(1)),
+            b'=' => {
+                let peek = self.peek_char();
+                if peek.is_some_and(|c| c == b'=') {
+                    self.advance();
+                    Token::new(TokenType::Eq, self.slice(self.pos - 2..self.pos))
+                } else {
+                    Token::new(TokenType::Assign, self.slice_len(1))
+                }
+            }
+            b'!' => {
+                let peek = self.peek_char();
+                if peek.is_some_and(|c| c == b'=') {
+                    self.advance();
+                    Token::new(TokenType::Neq, self.slice(self.pos - 2..self.pos))
+                } else {
+                    Token::new(TokenType::Bang, self.slice_len(1))
+                }
+            }
+            b'>' => {
+                let peek = self.peek_char();
+                if peek.is_some_and(|c| c == b'=') {
+                    self.advance();
+                    Token::new(TokenType::Gte, self.slice(self.pos - 2..self.pos))
+                } else {
+                    Token::new(TokenType::Gt, self.slice_len(1))
+                }
+            }
+            b'<' => {
+                let peek = self.peek_char();
+                if peek.is_some_and(|c| c == b'=') {
+                    self.advance();
+                    Token::new(TokenType::Lte, self.slice(self.pos - 2..self.pos))
+                } else {
+                    Token::new(TokenType::Lt, self.slice_len(1))
+                }
+            }
             c if c.is_ascii_alphabetic() => {
                 let ident = self.read_ident();
                 Token::new(TokenType::Ident, ident)
@@ -146,6 +186,39 @@ mod tests {
 
         tok = lex.next();
         assert!(tok.is_some_and(|t| t.ty == TokenType::Assign));
+
+        tok = lex.next();
+        assert!(tok.is_none());
+    }
+    
+    #[test]
+    fn comparison() {
+        let code = "= ! != == > >= < <=";
+        let mut lex = Lexer::from(code);
+
+        let mut tok = lex.next();
+        assert!(tok.is_some_and(|t| t.ty == TokenType::Assign));
+
+        tok = lex.next();
+        assert!(tok.is_some_and(|t| t.ty == TokenType::Bang));
+
+        tok = lex.next();
+        assert!(tok.is_some_and(|t| t.ty == TokenType::Neq));
+
+        tok = lex.next();
+        assert!(tok.is_some_and(|t| t.ty == TokenType::Eq));
+
+        tok = lex.next();
+        assert!(tok.is_some_and(|t| t.ty == TokenType::Gt));
+
+        tok = lex.next();
+        assert!(tok.is_some_and(|t| t.ty == TokenType::Gte));
+
+        tok = lex.next();
+        assert!(tok.is_some_and(|t| t.ty == TokenType::Lt));
+
+        tok = lex.next();
+        assert!(tok.is_some_and(|t| t.ty == TokenType::Lte));
 
         tok = lex.next();
         assert!(tok.is_none());
