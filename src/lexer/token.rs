@@ -12,8 +12,20 @@ impl<'a> Token<'a> {
     pub fn illegal(lit: &'a [u8]) -> Self {
         Self {
             ty: TokenType::Illegal,
-            lit
+            lit,
         }
+    }
+
+    /// If `lit` is a keyword, returns a new token of a corresponding type, otherwise a token
+    /// of `TokenType::Ident` type
+    pub fn keyword(lit: &'a [u8]) -> Self {
+        let ty = match lit {
+            b"let" => TokenType::Let,
+            b"fn" => TokenType::Fn,
+            _ => TokenType::Ident,
+        };
+
+        Self { ty, lit }
     }
 }
 
@@ -30,6 +42,9 @@ pub enum TokenType {
     Slash,
 
     Ident,
+
+    Let,
+    Fn,
 
     Assign,
 

@@ -17,6 +17,13 @@ impl<'a> Lexer<'a> {
     }
 
     #[inline(always)]
+    fn retreat(&mut self) {
+        if self.pos > 0 {
+            self.pos -= 1;
+        }
+    }
+
+    #[inline(always)]
     fn is_at_end(&self) -> bool {
         self.pos >= self.contents.len()
     }
@@ -41,20 +48,14 @@ impl<'a> Lexer<'a> {
         &self.contents[range]
     }
 
-    #[inline(always)]
-    fn chop(&mut self) -> u8 {
-        let c = self.cur_char();
-        self.advance();
-        return c;
-    }
-
     fn read_ident(&mut self) -> &'a [u8] {
         let start = self.pos;
         while !self.is_at_end() {
-            let c = self.chop();
+            let c = self.cur_char();
             if !pred::is_valid_ident(c) {
                 break;
             }
+            self.advance();
         }
 
         self.slice(start..self.pos)
@@ -133,7 +134,7 @@ impl<'a> Iterator for Lexer<'a> {
             }
             c if c.is_ascii_alphabetic() => {
                 let ident = self.read_ident();
-                Token::new(TokenType::Ident, ident)
+                Token::keyword(ident)
             }
             _ => Token::illegal(self.slice_len(1)),
         });
@@ -226,14 +227,37 @@ mod tests {
 
     #[test]
     fn ident() {
-        let code = "abubadibaba";
+        let code = "abubadibaba some_ident12";
         let mut lex = Lexer::from(code);
 
         let tok = lex.next();
         assert!(tok.is_some());
 
         let tok = tok.unwrap();
-        assert!(tok.ty == TokenType::Ident);
-        assert!(tok.lit == code.as_bytes());
+        assert_eq!(tok.ty, TokenType::Ident);
+        assert_eq!(tok.lit, b"abubadibaba");
+
+        let tok = lex.next();
+        assert!(tok.is_some());
+
+        let tok = tok.unwrap();
+        assert_eq!(tok.ty, TokenType::Ident);
+        assert_eq!(tok.lit, b"some_ident12");
+
+        assert!(lex.next().is_none());
+    }
+
+    #[test]
+    fn keywords() {
+        let code = "let fn";
+        let mut lex = Lexer::from(code);
+
+        let tok = lex.next();
+        assert!(tok.is_some());
+        assert_eq!(tok.unwrap().ty, TokenType::Let);
+
+        let tok = lex.next();
+        assert!(tok.is_some_and(|t| t.ty == TokenType::Fn));
+        assert!(lex.next().is_none());
     }
 }
