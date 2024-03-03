@@ -1,8 +1,8 @@
 use std::ops::Range;
 
-use self::token::{Token, TokenType};
-
 mod token;
+
+pub use self::token::{Token, TokenType};
 
 #[derive(Debug)]
 pub struct Lexer<'a> {

@@ -3,6 +3,8 @@ use std::process::ExitCode;
 use lexer::Lexer;
 
 mod lexer;
+mod ast;
+mod parser;
 
 fn main() -> ExitCode {
     let mut args = std::env::args();
