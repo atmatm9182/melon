@@ -99,7 +99,7 @@ impl<'a> Iterator for Lexer<'a> {
                 let peek = self.peek_char();
                 if peek.is_some_and(|c| c == b'=') {
                     self.advance();
-                    Token::new(TokenType::Eq, self.slice(self.pos - 2..self.pos))
+                    Token::new(TokenType::Eq, self.slice(self.pos - 1..self.pos + 1))
                 } else {
                     Token::new(TokenType::Assign, self.slice_len(1))
                 }
@@ -108,7 +108,7 @@ impl<'a> Iterator for Lexer<'a> {
                 let peek = self.peek_char();
                 if peek.is_some_and(|c| c == b'=') {
                     self.advance();
-                    Token::new(TokenType::Neq, self.slice(self.pos - 2..self.pos))
+                    Token::new(TokenType::Neq, self.slice(self.pos - 1..self.pos + 1))
                 } else {
                     Token::new(TokenType::Bang, self.slice_len(1))
                 }
@@ -117,7 +117,7 @@ impl<'a> Iterator for Lexer<'a> {
                 let peek = self.peek_char();
                 if peek.is_some_and(|c| c == b'=') {
                     self.advance();
-                    Token::new(TokenType::Gte, self.slice(self.pos - 2..self.pos))
+                    Token::new(TokenType::Gte, self.slice(self.pos - 1..self.pos + 1))
                 } else {
                     Token::new(TokenType::Gt, self.slice_len(1))
                 }
@@ -126,7 +126,7 @@ impl<'a> Iterator for Lexer<'a> {
                 let peek = self.peek_char();
                 if peek.is_some_and(|c| c == b'=') {
                     self.advance();
-                    Token::new(TokenType::Lte, self.slice(self.pos - 2..self.pos))
+                    Token::new(TokenType::Lte, self.slice(self.pos - 1..self.pos + 1))
                 } else {
                     Token::new(TokenType::Lt, self.slice_len(1))
                 }
