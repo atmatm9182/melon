@@ -1,8 +1,8 @@
 use std::{cell::RefCell, iter::Peekable};
 
 use crate::{
-    ast::{Expr, Ident, IntLitParseError, LetStatement, Program, Statement},
-    lexer::{Lexer, Token, TokenType},
+    ast::{Expr, IntLitParseError, LetStatement, Program, Statement, Ident},
+    lexer::{Token, TokenType},
 };
 
 pub struct Parser<'a, I: Iterator<Item = Token<'a>>> {
@@ -94,7 +94,7 @@ where
 
     fn parse_let(&self) -> ParserResult<Statement> {
         self.advance();
-        let var = self.expect_cur(TokenType::Ident)?.lit;
+        let var = self.parse_ident()?;
         self.expect_cur(TokenType::Assign)?;
         let expr = self.parse_expr()?;
         self.expect_cur(TokenType::Semicolon)?;
@@ -102,17 +102,23 @@ where
         Ok(Statement::Let(LetStatement { var, expr }))
     }
 
-    fn parse_int(&self, lit: &'_ [u8]) -> ParserResult<Expr<'a>> {
-        let e = Expr::parse_int(lit).map_err(Error::BadIntLit)?;
-        self.advance();
-        return Ok(e);
+    fn parse_int(&self) -> ParserResult<Expr<'a>> {
+        let cur = self.expect_cur(TokenType::IntLit)?;
+        let i = Expr::parse_int(cur.lit).map_err(Error::BadIntLit)?;
+        Ok(i)
+    }
+
+    fn parse_ident(&self) -> ParserResult<Ident<'a>> {
+        let cur = self.expect_cur(TokenType::Ident)?;
+        let ident = std::str::from_utf8(cur.lit).unwrap();
+        Ok(ident)
     }
 
     fn parse_expr(&self) -> ParserResult<Expr<'a>> {
         let tok = self.cur()?;
         match tok.ty {
-            TokenType::Ident => Ok(Expr::Ident(tok.lit)),
-            TokenType::IntLit => self.parse_int(tok.lit),
+            TokenType::Ident => Ok(Expr::Ident(self.parse_ident()?)),
+            TokenType::IntLit => self.parse_int(),
             _ => Err(Error::wrong_token(
                 vec![TokenType::Ident, TokenType::IntLit],
                 tok,

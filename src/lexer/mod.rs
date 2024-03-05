@@ -60,7 +60,7 @@ impl<'a> Lexer<'a> {
 
         let res = self.slice(start..self.pos);
         self.retreat();
-        return res;
+        res
     }
 
     #[inline(always)]
@@ -108,6 +108,10 @@ impl<'a> Iterator for Lexer<'a> {
             b'-' => Token::new(TokenType::Minus, self.slice_len(1)),
             b'*' => Token::new(TokenType::Star, self.slice_len(1)),
             b'/' => Token::new(TokenType::Slash, self.slice_len(1)),
+            b'(' => Token::new(TokenType::OpenParen, self.slice_len(1)),
+            b')' => Token::new(TokenType::CloseParen, self.slice_len(1)),
+            b'{' => Token::new(TokenType::OpenBrace, self.slice_len(1)),
+            b'}' => Token::new(TokenType::CloseBrace, self.slice_len(1)),
             b'=' => {
                 let peek = self.peek_char();
                 if peek.is_some_and(|c| c == b'=') {
@@ -156,13 +160,13 @@ impl<'a> Iterator for Lexer<'a> {
         };
 
         self.advance();
-        return Some(token);
+        Some(token)
     }
 }
 
 mod pred {
     pub fn is_valid_ident(c: u8) -> bool {
-        return c == b'_' || c.is_ascii_alphanumeric();
+        c == b'_' || c.is_ascii_alphanumeric()
     }
 }
 

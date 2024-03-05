@@ -48,6 +48,11 @@ pub enum TokenType {
 
     Assign,
 
+    OpenParen,
+    CloseParen,
+    OpenBrace,
+    CloseBrace,
+
     Bang,
     Eq,
     Neq,
