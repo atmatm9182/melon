@@ -55,16 +55,23 @@ pub fn next(self: *Self) ?Token {
 
 fn advance(self: *Self) void {
     self.pos += 1;
+    self.location.col += 1;
 }
 
 fn retreat(self: *Self) void {
     self.pos -= 1;
+    self.location.col -= 1;
 }
 
 fn skipWhitespace(self: *Self) void {
     while (self.curChar()) |char| {
-        if (!std.ascii.isWhitespace(char))
+        if (char == '\n') {
+            self.location.row += 1;
+            self.location.col = 0;
+        } else if (!std.ascii.isWhitespace(char)) {
             break;
+        }
+
         self.advance();
     }
 }
