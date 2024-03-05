@@ -1,7 +1,10 @@
 use std::{cell::RefCell, iter::Peekable};
 
 use crate::{
-    ast::{Expr, IntLitParseError, LetStatement, Program, Statement, Ident},
+    ast::{
+        BlockStatement, Expr, FunctionDef, Ident, IntLitParseError, LetStatement, ParamList,
+        Program, Statement,
+    },
     lexer::{Token, TokenType},
 };
 
@@ -69,6 +72,16 @@ where
         cur.cloned().ok_or(Error::Eof)
     }
 
+    fn expect_cur_one_of(&self, ts: Vec<TokenType>) -> ParserResult<Token<'a>> {
+        let cur = self.cur()?;
+        if ts.contains(&cur.ty) {
+            self.advance();
+            Ok(cur)
+        } else {
+            Err(Error::wrong_token(ts, cur))
+        }
+    }
+
     fn expect_cur(&self, tt: TokenType) -> ParserResult<Token<'a>> {
         let cur = self.cur()?;
         if tt == cur.ty {
@@ -79,20 +92,21 @@ where
         }
     }
 
-    fn parse_stmt(&self) -> ParserResult<Statement> {
+    fn parse_stmt(&self) -> ParserResult<Statement<'a>> {
         let tok = self.cur();
 
         match tok {
             Ok(tok) => match tok.ty {
                 TokenType::Let => self.parse_let(),
-                _ => todo!(),
+                TokenType::Fn => self.parse_fn(),
+                _ => Err(Error::wrong_token(vec![TokenType::Let, TokenType::Fn], tok))
             },
             Err(Error::Eof) => Err(Error::None),
             Err(e) => Err(e),
         }
     }
 
-    fn parse_let(&self) -> ParserResult<Statement> {
+    fn parse_let(&self) -> ParserResult<Statement<'a>> {
         self.advance();
         let var = self.parse_ident()?;
         self.expect_cur(TokenType::Assign)?;
@@ -124,5 +138,59 @@ where
                 tok,
             )),
         }
+    }
+
+    fn parse_fn(&self) -> ParserResult<Statement<'a>> {
+        self.advance();
+        let name = self.parse_ident()?;
+        let params = self.parse_params()?;
+        self.expect_cur(TokenType::Colon)?;
+        let return_type = self.parse_ident()?;
+
+        let body = self.parse_block()?;
+
+        Ok(Statement::FunctionDef(FunctionDef { name, params, body, return_type }))
+    }
+
+    fn parse_block(&self) -> ParserResult<BlockStatement<'a>> {
+        self.advance();
+
+        let mut stmts = vec![];
+        let mut cur_token = self.cur()?;
+
+        while cur_token.ty != TokenType::CloseBrace {
+            let stmt = self.parse_stmt()?;
+            stmts.push(stmt);
+
+            cur_token = self.cur()?;
+        }
+
+        self.advance();
+
+        Ok(BlockStatement(stmts))
+    }
+
+    fn parse_params(&self) -> ParserResult<ParamList<'a>> {
+        self.advance();
+
+        let mut params = vec![];
+
+        loop {
+            let param_name = self.parse_ident()?;
+            self.expect_cur(TokenType::Colon)?;
+            let param_type = self.parse_ident()?;
+            params.push((param_name, param_type));
+
+            let cur_token = self.cur()?;
+            match cur_token.ty {
+                TokenType::Comma => self.advance(),
+                TokenType::CloseParen => break,
+                _ => return Err(Error::wrong_token(vec![TokenType::Comma, TokenType::CloseParen], cur_token))
+            }
+        }
+
+        self.advance();
+
+        Ok(ParamList(params))
     }
 }
