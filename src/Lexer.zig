@@ -10,6 +10,8 @@ location: Location,
 
 const Self = @This();
 
+const keyword_map = std.ComptimeStringMap(Token.Type, .{ .{ "let", .let }, .{ "def", .def } });
+
 pub fn new(buf: []const u8) Self {
     return .{ .contents = buf, .pos = 0, .location = .{
         .file = "",
@@ -35,6 +37,7 @@ pub fn next(self: *Self) ?Token {
         '-' => .{ .ty = .minus, .lit = self.sliceLen(1), .loc = loc },
         '*' => .{ .ty = .star, .lit = self.sliceLen(1), .loc = loc },
         '/' => .{ .ty = .slash, .lit = self.sliceLen(1), .loc = loc },
+        '=' => .{ .ty = .assign, .lit = self.sliceLen(1), .loc = loc },
         '(' => .{ .ty = .open_paren, .lit = self.sliceLen(1), .loc = loc },
         ')' => .{ .ty = .close_paren, .lit = self.sliceLen(1), .loc = loc },
         '{' => .{ .ty = .open_brace, .lit = self.sliceLen(1), .loc = loc },
@@ -42,7 +45,16 @@ pub fn next(self: *Self) ?Token {
         else => blk: {
             if (std.ascii.isAlphabetic(char.?)) {
                 const lit = self.readIdent();
-                break :blk .{ .ty = .ident, .lit = lit, .loc = loc };
+                var ty = Token.Type.ident;
+                if (keyword_map.get(lit)) |t|
+                    ty = t;
+
+                break :blk .{ .ty = ty, .lit = lit, .loc = loc };
+            }
+
+            if (std.ascii.isDigit(char.?)) {
+                const lit = self.readInt();
+                break :blk .{ .ty = .int_lit, .lit = lit, .loc = loc };
             }
 
             break :blk .{ .ty = .illegal, .lit = self.sliceLen(1), .loc = loc };
@@ -111,6 +123,10 @@ fn readWhile(self: *Self, pred: *const fn (u8) bool) []const u8 {
 
 fn readIdent(self: *Self) []const u8 {
     return self.readWhile(isValidIdentChar);
+}
+
+fn readInt(self: *Self) []const u8 {
+    return self.readWhile(std.ascii.isDigit);
 }
 
 fn isValidIdentChar(c: u8) bool {

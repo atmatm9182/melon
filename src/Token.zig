@@ -18,5 +18,13 @@ pub const Type = enum {
     slash,
 
     ident,
+
+    assign,
+
+    int_lit,
+
+    let,
+    def,
+
     illegal,
 };
