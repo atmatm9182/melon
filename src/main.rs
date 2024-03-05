@@ -1,6 +1,7 @@
 use std::process::ExitCode;
 
 use lexer::Lexer;
+use parser::Parser;
 
 mod lexer;
 mod ast;
@@ -18,9 +19,10 @@ fn main() -> ExitCode {
     let code = code.unwrap();
 
     let lex = Lexer::from(code.as_ref());
-    for token in lex {
-        println!("{token:?}");
-    }
+    let parser = Parser::new(lex);
+    let program = parser.parse_program().unwrap();
+
+    println!("{program:?}");
 
     ExitCode::SUCCESS
 }

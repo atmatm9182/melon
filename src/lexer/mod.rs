@@ -58,7 +58,9 @@ impl<'a> Lexer<'a> {
             self.advance();
         }
 
-        self.slice(start..self.pos)
+        let res = self.slice(start..self.pos);
+        self.retreat();
+        return res;
     }
 
     #[inline(always)]
