@@ -10,7 +10,7 @@ location: Location,
 
 const Self = @This();
 
-const keyword_map = std.ComptimeStringMap(Token.Type, .{ .{ "let", .let }, .{ "def", .def } });
+const keyword_map = std.ComptimeStringMap(Token.Type, .{ .{ "let", .let }, .{ "def", .def }, .{ "return", .@"return" } });
 
 pub fn new(buf: []const u8) Self {
     return .{ .contents = buf, .pos = 0, .location = .{

@@ -4,6 +4,8 @@ const testing = std.testing;
 const Lexer = @import("./Lexer.zig");
 const Parser = @import("./Parser.zig");
 
+pub const std_options: std.Options = .{ .fmt_max_depth = 5 };
+
 pub fn main() !void {
     var args = std.process.args();
     _ = args.next();

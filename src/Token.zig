@@ -25,6 +25,7 @@ pub const Type = enum {
 
     let,
     def,
+    @"return",
 
     illegal,
 };

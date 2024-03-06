@@ -64,8 +64,18 @@ fn parseStmt(self: *Self) ParseStmtError!stmt.Stmt {
     return switch (tok.ty) {
         .let => self.parseLet(),
         .def => self.parseFunctionDef(),
-        else => self.wrongCurrentToken(&[_]Token.Type{.let}, tok),
+        .@"return" => self.parseReturn(),
+        else => self.wrongCurrentToken(&[_]Token.Type{ .let, .def, .@"return" }, tok),
     };
+}
+
+fn parseReturn(self: *Self) !stmt.Stmt {
+    const tok = self.cur.?;
+    self.advance();
+
+    const e = try self.parseExpr();
+    _ = try self.expectCur(.semicolon);
+    return .{ .kind = .{ .@"return" = e }, .token = tok };
 }
 
 fn parseLet(self: *Self) !stmt.Stmt {
@@ -109,6 +119,11 @@ fn parseExpr(self: *Self) !expr.Expr {
             const i = try self.parseIntLit();
             const kind = expr.ExprKind{ .int_lit = i };
             break :int .{ .kind = kind, .token = tok };
+        },
+        .ident => ident: {
+            const value = self.parseIdent() catch unreachable;
+            const kind = expr.ExprKind{ .ident = value };
+            break :ident .{ .kind = kind, .token = tok };
         },
         else => self.wrongCurrentToken(&[_]Token.Type{ .int_lit, .ident }, tok),
     };

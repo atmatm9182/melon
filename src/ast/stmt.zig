@@ -15,6 +15,7 @@ pub const Stmt = struct {
                 def.body.deinit();
             },
             .let => {},
+            .@"return" => {},
         }
     }
 };
@@ -22,6 +23,7 @@ pub const Stmt = struct {
 pub const StmtKind = union(enum) {
     let: LetStmt,
     fn_def: FunctionDefinitionStmt,
+    @"return": Expr,
 };
 
 pub const LetStmt = struct {
